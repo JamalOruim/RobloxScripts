@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 -- Remote Events
 local TrainLevelEvent = ReplicatedStorage.RemoteEvents.TrainLevel
@@ -17,16 +18,19 @@ local BattleActionEvent = ReplicatedStorage.RemoteEvents.BattleAction
 -- Player
 local LocalPlayer = Players.LocalPlayer
 
--- UI Constants
-local UI_PRIMARY_COLOR = Color3.fromRGB(35, 35, 45)
-local UI_SECONDARY_COLOR = Color3.fromRGB(50, 50, 60)
-local UI_ACCENT_COLOR = Color3.fromRGB(0, 120, 215) -- Blue
-local UI_HOVER_COLOR = Color3.fromRGB(0, 150, 255)
-local UI_TEXT_COLOR = Color3.fromRGB(220, 220, 220)
-local UI_SUCCESS_COLOR = Color3.fromRGB(0, 180, 0)
-local UI_ERROR_COLOR = Color3.fromRGB(180, 0, 0)
-local UI_CORNER_RADIUS = UDim.new(0, 8)
-local UI_TWEEN_INFO = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+-- UI Constants (Modern Design)
+local UI_BACKGROUND_COLOR = Color3.fromRGB(20, 20, 28)
+local UI_PRIMARY_COLOR = Color3.fromRGB(30, 30, 40)
+local UI_SECONDARY_COLOR = Color3.fromRGB(45, 45, 55)
+local UI_ACCENT_COLOR = Color3.fromRGB(0, 150, 255) -- Brighter Blue
+local UI_HOVER_COLOR = Color3.fromRGB(0, 180, 255)
+local UI_TEXT_COLOR = Color3.fromRGB(230, 230, 230)
+local UI_DISABLED_TEXT_COLOR = Color3.fromRGB(150, 150, 150)
+local UI_SUCCESS_COLOR = Color3.fromRGB(0, 200, 0)
+local UI_ERROR_COLOR = Color3.fromRGB(200, 0, 0)
+local UI_CORNER_RADIUS = UDim.new(0, 12)
+local UI_TWEEN_INFO = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local UI_TWEEN_INFO_LONG = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 -- UI Variables
 local ScreenGui = Instance.new("ScreenGui")
@@ -36,20 +40,24 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 500, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+MainFrame.Size = UDim2.new(0, 600, 0, 500)
+MainFrame.Position = UDim2.new(0.5, -300, 0.5, -250)
 MainFrame.BackgroundColor3 = UI_PRIMARY_COLOR
 MainFrame.BorderSizePixel = 0
-MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local MainFrameCorner = Instance.new("UICorner")
 MainFrameCorner.CornerRadius = UI_CORNER_RADIUS
 MainFrameCorner.Parent = MainFrame
 
+local MainFrameStroke = Instance.new("UIStroke")
+MainFrameStroke.Color = UI_SECONDARY_COLOR
+MainFrameStroke.Thickness = 2
+MainFrameStroke.Parent = MainFrame
+
 local TitleBar = Instance.new("Frame")
 TitleBar.Name = "TitleBar"
-TitleBar.Size = UDim2.new(1, 0, 0, 40)
+TitleBar.Size = UDim2.new(1, 0, 0, 50)
 TitleBar.BackgroundColor3 = UI_SECONDARY_COLOR
 TitleBar.BorderSizePixel = 0
 TitleBar.Parent = MainFrame
@@ -60,13 +68,13 @@ TitleBarCorner.Parent = TitleBar
 
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Name = "TitleLabel"
-TitleLabel.Size = UDim2.new(1, -120, 1, 0)
-TitleLabel.Position = UDim2.new(0, 10, 0, 0)
+TitleLabel.Size = UDim2.new(1, -150, 1, 0)
+TitleLabel.Position = UDim2.new(0, 15, 0, 0)
 TitleLabel.BackgroundColor3 = UI_SECONDARY_COLOR
 TitleLabel.Text = "OPI FarmX"
 TitleLabel.TextColor3 = UI_TEXT_COLOR
 TitleLabel.Font = Enum.Font.SourceSansBold
-TitleLabel.TextSize = 24
+TitleLabel.TextSize = 28
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.TextWrapped = true
 TitleLabel.BorderSizePixel = 0
@@ -75,13 +83,13 @@ TitleLabel.Parent = TitleBar
 local function createTitleBarButton(name, text, bgColor, positionOffset)
     local button = Instance.new("TextButton")
     button.Name = name
-    button.Size = UDim2.new(0, 35, 1, 0)
+    button.Size = UDim2.new(0, 45, 1, 0)
     button.Position = UDim2.new(1, positionOffset, 0, 0)
     button.BackgroundColor3 = bgColor
     button.Text = text
     button.TextColor3 = UI_TEXT_COLOR
     button.Font = Enum.Font.SourceSansBold
-    button.TextSize = 20
+    button.TextSize = 24
     button.BorderSizePixel = 0
     button.Parent = TitleBar
 
@@ -91,7 +99,7 @@ local function createTitleBarButton(name, text, bgColor, positionOffset)
 
     local originalColor = bgColor
     button.MouseEnter:Connect(function()
-        TweenService:Create(button, UI_TWEEN_INFO, {BackgroundColor3 = originalColor:Lerp(Color3.new(1,1,1), 0.2)}):Play()
+        TweenService:Create(button, UI_TWEEN_INFO, {BackgroundColor3 = originalColor:Lerp(Color3.new(1,1,1), 0.3)}):Play()
     end)
     button.MouseLeave:Connect(function()
         TweenService:Create(button, UI_TWEEN_INFO, {BackgroundColor3 = originalColor}):Play()
@@ -100,22 +108,22 @@ local function createTitleBarButton(name, text, bgColor, positionOffset)
     return button
 end
 
-local CloseButton = createTitleBarButton("CloseButton", "X", UI_ERROR_COLOR, -40)
-local MinimizeMaximizeButton = createTitleBarButton("MinimizeMaximizeButton", "_", UI_ACCENT_COLOR, -80)
+local CloseButton = createTitleBarButton("CloseButton", "X", UI_ERROR_COLOR, -50)
+local MinimizeMaximizeButton = createTitleBarButton("MinimizeMaximizeButton", "_", UI_ACCENT_COLOR, -100)
 
 -- Tab System
 local TabFrame = Instance.new("Frame")
 TabFrame.Name = "TabFrame"
-TabFrame.Size = UDim2.new(0, 120, 1, -40)
-TabFrame.Position = UDim2.new(0, 0, 0, 40)
+TabFrame.Size = UDim2.new(0, 180, 1, -50)
+TabFrame.Position = UDim2.new(0, 0, 0, 50)
 TabFrame.BackgroundColor3 = UI_SECONDARY_COLOR
 TabFrame.BorderSizePixel = 0
 TabFrame.Parent = MainFrame
 
 local TabContentFrame = Instance.new("Frame")
 TabContentFrame.Name = "TabContentFrame"
-TabContentFrame.Size = UDim2.new(1, -120, 1, -40)
-TabContentFrame.Position = UDim2.new(0, 120, 0, 40)
+TabContentFrame.Size = UDim2.new(1, -180, 1, -50)
+TabContentFrame.Position = UDim2.new(0, 180, 0, 50)
 TabContentFrame.BackgroundColor3 = UI_PRIMARY_COLOR
 TabContentFrame.BorderSizePixel = 0
 TabContentFrame.Parent = MainFrame
@@ -124,18 +132,23 @@ local TabContentCorner = Instance.new("UICorner")
 TabContentCorner.CornerRadius = UI_CORNER_RADIUS
 TabContentCorner.Parent = TabContentFrame
 
+local TabContentStroke = Instance.new("UIStroke")
+TabContentStroke.Color = UI_SECONDARY_COLOR
+TabContentStroke.Thickness = 2
+TabContentStroke.Parent = TabContentFrame
+
 local TabButtons = {}
 local TabContents = {}
 
 local function createTab(name, parentFrame)
     local button = Instance.new("TextButton")
     button.Name = name .. "TabButton"
-    button.Size = UDim2.new(1, 0, 0, 45)
+    button.Size = UDim2.new(1, 0, 0, 55)
     button.BackgroundColor3 = UI_SECONDARY_COLOR
     button.Text = name
     button.TextColor3 = UI_TEXT_COLOR
     button.Font = Enum.Font.SourceSans
-    button.TextSize = 18
+    button.TextSize = 22
     button.BorderSizePixel = 0
     button.Parent = TabFrame
 
@@ -147,7 +160,7 @@ local function createTab(name, parentFrame)
         TweenService:Create(button, UI_TWEEN_INFO, {BackgroundColor3 = UI_HOVER_COLOR}):Play()
     end)
     button.MouseLeave:Connect(function()
-        if TabButtons[name].BackgroundColor3 ~= UI_ACCENT_COLOR then -- Only tween back if not active
+        if TabButtons[name].BackgroundColor3 ~= UI_ACCENT_COLOR then
             TweenService:Create(button, UI_TWEEN_INFO, {BackgroundColor3 = UI_SECONDARY_COLOR}):Play()
         end
     end)
@@ -165,7 +178,7 @@ local function createTab(name, parentFrame)
     contentLayout.FillDirection = Enum.FillDirection.Vertical
     contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
     contentLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-    contentLayout.Padding = UDim.new(0, 10)
+    contentLayout.Padding = UDim.new(0, 15)
     contentLayout.Parent = content
 
     TabButtons[name] = button
@@ -183,12 +196,12 @@ local TabListLayout = Instance.new("UIListLayout")
 TabListLayout.FillDirection = Enum.FillDirection.Vertical
 TabListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 TabListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-TabListLayout.Padding = UDim.new(0, 5)
+TabListLayout.Padding = UDim.new(0, 8)
 TabListLayout.Parent = TabFrame
 
 -- Initial Tab Selection
 FarmContent.Visible = true
-TabButtons["Farm"].BackgroundColor3 = UI_ACCENT_COLOR
+TweenService:Create(TabButtons["Farm"], UI_TWEEN_INFO, {BackgroundColor3 = UI_ACCENT_COLOR}):Play()
 
 local function switchTab(selectedTabName)
     for tabName, content in pairs(TabContents) do
@@ -207,8 +220,8 @@ SettingsTabButton.MouseButton1Click:Connect(function() switchTab("Settings") end
 
 -- UI Functionality
 CloseButton.MouseButton1Click:Connect(function()
-    TweenService:Create(MainFrame, UI_TWEEN_INFO, {Size = UDim2.new(0,0,0,0), Position = UDim2.new(0.5,0,0.5,0)}):Play()
-    task.wait(UI_TWEEN_INFO.Time)
+    TweenService:Create(MainFrame, UI_TWEEN_INFO_LONG, {Size = UDim2.new(0,0,0,0), Position = UDim2.new(0.5,0,0.5,0)}):Play()
+    task.wait(UI_TWEEN_INFO_LONG.Time)
     ScreenGui.Enabled = false
 end)
 
@@ -218,51 +231,63 @@ local originalPosition = MainFrame.Position
 
 MinimizeMaximizeButton.MouseButton1Click:Connect(function()
     if isMinimized then
-        TweenService:Create(MainFrame, UI_TWEEN_INFO, {Size = originalSize, Position = originalPosition}):Play()
+        TweenService:Create(MainFrame, UI_TWEEN_INFO_LONG, {Size = originalSize, Position = originalPosition}):Play()
         MinimizeMaximizeButton.Text = "_"
     else
         originalSize = MainFrame.Size
         originalPosition = MainFrame.Position
-        TweenService:Create(MainFrame, UI_TWEEN_INFO, {Size = UDim2.new(0, 150, 0, 40), Position = UDim2.new(MainFrame.Position.X.Scale, MainFrame.Position.X.Offset, 0, 0)}):Play()
+        TweenService:Create(MainFrame, UI_TWEEN_INFO_LONG, {Size = UDim2.new(0, 200, 0, 50), Position = UDim2.new(MainFrame.Position.X.Scale, MainFrame.Position.X.Offset, 0, 0)}):Play()
         MinimizeMaximizeButton.Text = "[]"
     end
     isMinimized = not isMinimized
 end)
 
--- Drag Detection (for mobile and general UI)
-local function setupDrag(uiElement)
-    local dragging
-    local dragInput
-    local dragStart
-    local startPosition
+-- Robust Drag Detection
+local function setupDrag(uiElement, dragHandle)
+    dragHandle = dragHandle or uiElement -- If no specific handle, use the element itself
+    local dragging = false
+    local dragStart = Vector2.new(0, 0)
+    local initialPosition = UDim2.new(0, 0, 0, 0)
 
-    uiElement.InputBegan:Connect(function(input)
+    dragHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            dragInput = input
             dragStart = input.Position
-            startPosition = uiElement.Position
+            initialPosition = uiElement.Position
 
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
+            -- Bring to front when dragging
+            uiElement.ZIndex = 10
         end
     end)
 
-    uiElement.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            uiElement.Position = UDim2.new(
-                startPosition.X.Scale, startPosition.X.Offset + delta.X,
-                startPosition.Y.Scale, startPosition.Y.Offset + delta.Y
-            )
+    dragHandle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if dragging then
+                local delta = input.Position - dragStart
+                local newX = initialPosition.X.Offset + delta.X
+                local newY = initialPosition.Y.Offset + delta.Y
+
+                -- Clamp to screen bounds
+                local screenX = game.Workspace.CurrentCamera.ViewportSize.X
+                local screenY = game.Workspace.CurrentCamera.ViewportSize.Y
+
+                newX = math.max(0, math.min(newX, screenX - uiElement.AbsoluteSize.X))
+                newY = math.max(0, math.min(newY, screenY - uiElement.AbsoluteSize.Y))
+
+                uiElement.Position = UDim2.new(0, newX, 0, newY)
+            end
+        end
+    end)
+
+    dragHandle.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            uiElement.ZIndex = 1 -- Reset ZIndex
         end
     end)
 end
 
-setupDrag(MainFrame)
+setupDrag(MainFrame, TitleBar) -- MainFrame is dragged by TitleBar
 
 -- Device Detection and Mobile Button
 local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
@@ -270,13 +295,13 @@ local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEna
 if isMobile then
     local MobileToggleButton = Instance.new("TextButton")
     MobileToggleButton.Name = "MobileToggleButton"
-    MobileToggleButton.Size = UDim2.new(0, 100, 0, 50)
+    MobileToggleButton.Size = UDim2.new(0, 140, 0, 60)
     MobileToggleButton.Position = UDim2.new(0.05, 0, 0.9, 0)
     MobileToggleButton.BackgroundColor3 = UI_ACCENT_COLOR
     MobileToggleButton.Text = "Toggle UI"
     MobileToggleButton.TextColor3 = UI_TEXT_COLOR
     MobileToggleButton.Font = Enum.Font.SourceSansBold
-    MobileToggleButton.TextSize = 18
+    MobileToggleButton.TextSize = 22
     MobileToggleButton.BorderSizePixel = 0
     MobileToggleButton.Parent = ScreenGui
     MobileToggleButton.ZIndex = 10 -- Ensure it's on top
@@ -285,7 +310,12 @@ if isMobile then
     corner.CornerRadius = UI_CORNER_RADIUS
     corner.Parent = MobileToggleButton
 
-    setupDrag(MobileToggleButton)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = UI_SECONDARY_COLOR
+    stroke.Thickness = 2
+    stroke.Parent = MobileToggleButton
+
+    setupDrag(MobileToggleButton) -- Mobile button is dragged by itself
 
     MobileToggleButton.MouseButton1Click:Connect(function()
         ScreenGui.Enabled = not ScreenGui.Enabled
@@ -295,25 +325,25 @@ end
 -- Settings Tab Content
 local HotkeyLabel = Instance.new("TextLabel")
 HotkeyLabel.Name = "HotkeyLabel"
-HotkeyLabel.Size = UDim2.new(1, -20, 0, 25)
-HotkeyLabel.Position = UDim2.new(0, 10, 0, 10)
+HotkeyLabel.Size = UDim2.new(1, -30, 0, 35)
+HotkeyLabel.Position = UDim2.new(0, 15, 0, 0)
 HotkeyLabel.BackgroundColor3 = UI_PRIMARY_COLOR
 HotkeyLabel.Text = "Hotkey para ocultar/exibir UI: Nenhuma"
 HotkeyLabel.TextColor3 = UI_TEXT_COLOR
 HotkeyLabel.Font = Enum.Font.SourceSans
-HotkeyLabel.TextSize = 16
+HotkeyLabel.TextSize = 18
 HotkeyLabel.TextXAlignment = Enum.TextXAlignment.Left
 HotkeyLabel.Parent = SettingsContent
 
 local HotkeyButton = Instance.new("TextButton")
 HotkeyButton.Name = "HotkeyButton"
-HotkeyButton.Size = UDim2.new(0, 120, 0, 35)
-HotkeyButton.Position = UDim2.new(0, 10, 0, 40)
+HotkeyButton.Size = UDim2.new(0, 180, 0, 45)
+HotkeyButton.Position = UDim2.new(0, 15, 0, 40)
 HotkeyButton.BackgroundColor3 = UI_ACCENT_COLOR
 HotkeyButton.Text = "Definir Hotkey"
 HotkeyButton.TextColor3 = UI_TEXT_COLOR
 HotkeyButton.Font = Enum.Font.SourceSansBold
-HotkeyButton.TextSize = 16
+HotkeyButton.TextSize = 18
 HotkeyButton.Parent = SettingsContent
 
 local HotkeyButtonCorner = Instance.new("UICorner")
@@ -349,8 +379,8 @@ end)
 local function createFarmOption(parent, name, remoteEvent, delayTime)
     local container = Instance.new("Frame")
     container.Name = name .. "Container"
-    container.Size = UDim2.new(1, -20, 0, 50)
-    container.Position = UDim2.new(0, 10, 0, 0)
+    container.Size = UDim2.new(1, -30, 0, 70)
+    container.Position = UDim2.new(0, 15, 0, 0)
     container.BackgroundColor3 = UI_SECONDARY_COLOR
     container.BorderSizePixel = 0
     container.Parent = parent
@@ -362,12 +392,12 @@ local function createFarmOption(parent, name, remoteEvent, delayTime)
     local label = Instance.new("TextLabel")
     label.Name = name .. "Label"
     label.Size = UDim2.new(0.7, 0, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Position = UDim2.new(0, 15, 0, 0)
     label.BackgroundColor3 = UI_SECONDARY_COLOR
     label.Text = name
     label.TextColor3 = UI_TEXT_COLOR
     label.Font = Enum.Font.SourceSans
-    label.TextSize = 18
+    label.TextSize = 22
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = container
 
@@ -379,7 +409,7 @@ local function createFarmOption(parent, name, remoteEvent, delayTime)
     slider.Text = "OFF"
     slider.TextColor3 = UI_TEXT_COLOR
     slider.Font = Enum.Font.SourceSansBold
-    slider.TextSize = 16
+    slider.TextSize = 20
     slider.Parent = container
 
     local sliderCorner = Instance.new("UICorner")
@@ -422,8 +452,8 @@ createFarmOption(FarmContent, "Haki Farm", TrainLevelEvent)
 -- Beli Farm
 local BeliFarmContainer = Instance.new("Frame")
 BeliFarmContainer.Name = "BeliFarmContainer"
-BeliFarmContainer.Size = UDim2.new(1, -20, 0, 100)
-BeliFarmContainer.Position = UDim2.new(0, 10, 0, 0)
+BeliFarmContainer.Size = UDim2.new(1, -30, 0, 120)
+BeliFarmContainer.Position = UDim2.new(0, 15, 0, 0)
 BeliFarmContainer.BackgroundColor3 = UI_SECONDARY_COLOR
 BeliFarmContainer.BorderSizePixel = 0
 BeliFarmContainer.Parent = FarmContent
@@ -435,12 +465,12 @@ BeliFarmContainerCorner.Parent = BeliFarmContainer
 local BeliLabel = Instance.new("TextLabel")
 BeliLabel.Name = "BeliLabel"
 BeliLabel.Size = UDim2.new(0.7, 0, 0.5, 0)
-BeliLabel.Position = UDim2.new(0, 10, 0, 0)
+BeliLabel.Position = UDim2.new(0, 15, 0, 0)
 BeliLabel.BackgroundColor3 = UI_SECONDARY_COLOR
 BeliLabel.Text = "Beli Farm"
 BeliLabel.TextColor3 = UI_TEXT_COLOR
 BeliLabel.Font = Enum.Font.SourceSans
-BeliLabel.TextSize = 18
+BeliLabel.TextSize = 22
 BeliLabel.TextXAlignment = Enum.TextXAlignment.Left
 BeliLabel.Parent = BeliFarmContainer
 
@@ -452,7 +482,7 @@ BeliSlider.BackgroundColor3 = UI_ERROR_COLOR
 BeliSlider.Text = "OFF"
 BeliSlider.TextColor3 = UI_TEXT_COLOR
 BeliSlider.Font = Enum.Font.SourceSansBold
-BeliSlider.TextSize = 16
+BeliSlider.TextSize = 20
 BeliSlider.Parent = BeliFarmContainer
 
 local BeliSliderCorner = Instance.new("UICorner")
@@ -462,12 +492,12 @@ BeliSliderCorner.Parent = BeliSlider
 local BeliOptionLabel = Instance.new("TextLabel")
 BeliOptionLabel.Name = "BeliOptionLabel"
 BeliOptionLabel.Size = UDim2.new(0.7, 0, 0.5, 0)
-BeliOptionLabel.Position = UDim2.new(0, 10, 0, 50)
+BeliOptionLabel.Position = UDim2.new(0, 15, 0, 60)
 BeliOptionLabel.BackgroundColor3 = UI_SECONDARY_COLOR
 BeliOptionLabel.Text = "Trabalho: Odd Jobs (+16 Beli)"
 BeliOptionLabel.TextColor3 = UI_TEXT_COLOR
 BeliOptionLabel.Font = Enum.Font.SourceSans
-BeliOptionLabel.TextSize = 14
+BeliOptionLabel.TextSize = 18
 BeliOptionLabel.TextXAlignment = Enum.TextXAlignment.Left
 BeliOptionLabel.Parent = BeliFarmContainer
 
@@ -479,7 +509,7 @@ BeliOptionButton.BackgroundColor3 = UI_ACCENT_COLOR
 BeliOptionButton.Text = "Mudar"
 BeliOptionButton.TextColor3 = UI_TEXT_COLOR
 BeliOptionButton.Font = Enum.Font.SourceSansBold
-BeliOptionButton.TextSize = 14
+BeliOptionButton.TextSize = 18
 BeliOptionButton.Parent = BeliFarmContainer
 
 local BeliOptionButtonCorner = Instance.new("UICorner")
@@ -545,8 +575,8 @@ createFarmOption(FarmContent, "Fish Farm", FishCastEvent, 4)
 -- Combat Tab Content
 local AutoBattleContainer = Instance.new("Frame")
 AutoBattleContainer.Name = "AutoBattleContainer"
-AutoBattleContainer.Size = UDim2.new(1, -20, 0, 50)
-AutoBattleContainer.Position = UDim2.new(0, 10, 0, 0)
+AutoBattleContainer.Size = UDim2.new(1, -30, 0, 70)
+AutoBattleContainer.Position = UDim2.new(0, 15, 0, 0)
 AutoBattleContainer.BackgroundColor3 = UI_SECONDARY_COLOR
 AutoBattleContainer.BorderSizePixel = 0
 AutoBattleContainer.Parent = CombatContent
@@ -558,12 +588,12 @@ AutoBattleContainerCorner.Parent = AutoBattleContainer
 local AutoBattleLabel = Instance.new("TextLabel")
 AutoBattleLabel.Name = "AutoBattleLabel"
 AutoBattleLabel.Size = UDim2.new(0.7, 0, 1, 0)
-AutoBattleLabel.Position = UDim2.new(0, 10, 0, 0)
+AutoBattleLabel.Position = UDim2.new(0, 15, 0, 0)
 AutoBattleLabel.BackgroundColor3 = UI_SECONDARY_COLOR
 AutoBattleLabel.Text = "Auto Battle"
 AutoBattleLabel.TextColor3 = UI_TEXT_COLOR
 AutoBattleLabel.Font = Enum.Font.SourceSans
-AutoBattleLabel.TextSize = 18
+AutoBattleLabel.TextSize = 22
 AutoBattleLabel.TextXAlignment = Enum.TextXAlignment.Left
 AutoBattleLabel.Parent = AutoBattleContainer
 
@@ -575,7 +605,7 @@ AutoBattleSlider.BackgroundColor3 = UI_ERROR_COLOR
 AutoBattleSlider.Text = "OFF"
 AutoBattleSlider.TextColor3 = UI_TEXT_COLOR
 AutoBattleSlider.Font = Enum.Font.SourceSansBold
-AutoBattleSlider.TextSize = 16
+AutoBattleSlider.TextSize = 20
 AutoBattleSlider.Parent = AutoBattleContainer
 
 local AutoBattleSliderCorner = Instance.new("UICorner")
