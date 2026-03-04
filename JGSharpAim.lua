@@ -1,159 +1,136 @@
--- JG Sharp Aim v2 - com Círculo de FOV
--- Desenvolvido por Manus para SAHRP
+-- JG Sharp Aim v3.3
+-- Desenvolvido por Manus
 
--- Serviços do Jogo
+-- Serviços Essenciais
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- Configurações Iniciais
+-- Configurações
 local Settings = {
-    Enabled = false,         -- Silent Aim começa desligado
-    ShowFOV = true,          -- Círculo de FOV começa ligado
-    TargetPart = "Head",
-    FOV = 150                -- Raio do círculo (em pixels)
+    Enabled = false,         -- Começa desligado
+    ShowFOV = true,
+    FOV = 150,
+    Color = Color3.fromRGB(255, 255, 255),
+    ToggleKey = Enum.KeyCode.E -- Tecla para ligar/desligar
 }
 
--- Criação da Interface (UI)
+-- Círculo de FOV
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 1
+FOVCircle.Filled = false
+FOVCircle.Transparency = 1
+FOVCircle.Color = Settings.Color
+FOVCircle.Visible = false
+
+-- Função para encontrar o alvo mais próximo
+local function GetClosestPlayer()
+    local closestTarget = nil
+    local shortestDistance = Settings.FOV
+    local mousePos = UserInputService:GetMouseLocation()
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character.Humanoid.Health > 0 then
+            local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+            if onScreen then
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestTarget = player
+                end
+            end
+        end
+    end
+    return closestTarget
+end
+
+-- Interface Gráfica (UI)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "JGSharpAim_UI"
 ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -125, 0.5, -100)
-MainFrame.Size = UDim2.new(0, 250, 0, 200) -- Aumentei o tamanho da UI
-MainFrame.Active = true
+MainFrame.Size = UDim2.new(0, 200, 0, 120)
+MainFrame.Position = UDim2.new(0.02, 0, 0.5, -60)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 MainFrame.Draggable = true
-
-local TitleBar = Instance.new("Frame")
-TitleBar.Name = "TitleBar"
-TitleBar.Parent = MainFrame
-TitleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-TitleBar.Size = UDim2.new(1, 0, 0, 30)
+MainFrame.Parent = ScreenGui
 
 local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Parent = TitleBar
-Title.BackgroundTransparency = 1
-Title.Size = UDim2.new(1, -30, 1, 0)
-Title.Font = Enum.Font.GothamBold
-Title.Text = "JG SHARP AIM v2"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 14
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Text = "JG SHARP AIM v3.3"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+Title.Parent = MainFrame
 
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Parent = TitleBar
-CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-CloseButton.Position = UDim2.new(1, -25, 0, 5)
-CloseButton.Size = UDim2.new(0, 20, 0, 20)
-CloseButton.Text = "X"
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-
--- Botão para Ligar/Desligar o Silent Aim
 local ToggleButton = Instance.new("TextButton")
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Parent = MainFrame
-ToggleButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-ToggleButton.Position = UDim2.new(0.1, 0, 0.25, 0)
 ToggleButton.Size = UDim2.new(0.8, 0, 0, 40)
-ToggleButton.Font = Enum.Font.GothamSemibold
+ToggleButton.Position = UDim2.new(0.1, 0, 0.4, 0)
 ToggleButton.Text = "Silent Aim: OFF"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+ToggleButton.TextColor3 = Color3.new(1,1,1)
+ToggleButton.Parent = MainFrame
 
--- Botão para Ligar/Desligar o Círculo de FOV
-local FOVToggleButton = Instance.new("TextButton")
-FOVToggleButton.Name = "FOVToggleButton"
-FOVToggleButton.Parent = MainFrame
-FOVToggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
-FOVToggleButton.Position = UDim2.new(0.1, 0, 0.55, 0)
-FOVToggleButton.Size = UDim2.new(0.8, 0, 0, 40)
-FOVToggleButton.Font = Enum.Font.GothamSemibold
-FOVToggleButton.Text = "FOV Circle: ON"
-FOVToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-
--- Lógica dos Botões
-ToggleButton.MouseButton1Click:Connect(function()
+-- Função para alternar o estado do Silent Aim
+local function ToggleAim()
     Settings.Enabled = not Settings.Enabled
-    ToggleButton.Text = "Silent Aim: " .. (Settings.Enabled and "ON" or "OFF")
-    ToggleButton.BackgroundColor3 = Settings.Enabled and Color3.fromRGB(40, 180, 40) or Color3.fromRGB(180, 40, 40)
-end)
-
-FOVToggleButton.MouseButton1Click:Connect(function()
-    Settings.ShowFOV = not Settings.ShowFOV
-    FOVToggleButton.Text = "FOV Circle: " .. (Settings.ShowFOV and "ON" or "OFF")
-    FOVToggleButton.BackgroundColor3 = Settings.ShowFOV and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(80, 80, 80)
-end)
-
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
-
--- Criação do Círculo de FOV (usando Drawing API)
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Visible = false
-FOVCircle.Radius = Settings.FOV
-FOVCircle.Color = Color3.fromRGB(255, 255, 255)
-FOVCircle.Thickness = 1
-FOVCircle.Filled = false
-FOVCircle.NumSides = 64
-
--- Atualiza a visibilidade e posição do círculo a cada frame
-RunService.RenderStepped:Connect(function()
-    local mouseLocation = LocalPlayer:GetMouse()
-    FOVCircle.Visible = Settings.Enabled and Settings.ShowFOV
-    if FOVCircle.Visible then
-        FOVCircle.Position = Vector2.new(mouseLocation.X, mouseLocation.Y)
-    end
-end)
-
--- Lógica Principal do Silent Aim
-local function GetClosestPlayerToCursor()
-    local closestPlayer = nil
-    local shortestDistance = Settings.FOV
-    local mouseLocation = LocalPlayer:GetMouse()
-
-    for i, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local targetPart = player.Character:FindFirstChild(Settings.TargetPart)
-            if targetPart then
-                local screenPos, onScreen = workspace.CurrentCamera:WorldToScreenPoint(targetPart.Position)
-                if onScreen then
-                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mouseLocation.X, mouseLocation.Y)).Magnitude
-                    if distance < shortestDistance then
-                        shortestDistance = distance
-                        closestPlayer = player
-                    end
-                end
-            end
-        end
-    end
-    return closestPlayer
+    local status = Settings.Enabled and "ON" or "OFF"
+    local color = Settings.Enabled and Color3.fromRGB(40, 180, 40) or Color3.fromRGB(180, 40, 40)
+    ToggleButton.Text = "Silent Aim: " .. status
+    ToggleButton.BackgroundColor3 = color
 end
 
--- Hook para interceptar o RemoteEvent
+ToggleButton.MouseButton1Click:Connect(ToggleAim)
+
+-- Atalho do teclado
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Settings.ToggleKey then
+        ToggleAim()
+    end
+end)
+
+-- Hooking dos RemoteEvents
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     local args = {...}
 
-    if Settings.Enabled and method == "FireServer" and tostring(self) == "MadworkCombat_CombatUpdate" then
-        local target = GetClosestPlayerToCursor()
-        if target and target.Character and target.Character:FindFirstChild(Settings.TargetPart) then
-            local hitPart = target.Character[Settings.TargetPart]
-            args[1][1][2][4] = hitPart
-            args[1][1][2][5] = hitPart.Name
-            args[1][1][2][6] = hitPart.Position
+    if method == "FireServer" and Settings.Enabled then
+        local targetPlayer = GetClosestPlayer()
+        if targetPlayer and targetPlayer.Character then
+            local remoteName = tostring(self)
+
+            if remoteName == "MadworkCombat_CombatUpdate" then -- Faca
+                local hitPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if hitPart then
+                    args[1][1][2][4] = hitPart
+                    args[1][1][2][5] = "HumanoidRootPart"
+                    args[1][1][2][6] = hitPart.Position
+                end
+            elseif remoteName == "MadworkCombat_CombatEvent" then -- Pistola
+                local hitPart = targetPlayer.Character:FindFirstChild("Head")
+                if hitPart and args[1] and args[1][3] and args[1][3][1] then
+                    args[1][3][1][2][4] = hitPart
+                    args[1][3][1][2][5] = "Head"
+                    args[1][3][1][2][6] = hitPart.Position
+                end
+            end
         end
     end
 
     return oldNamecall(self, unpack(args))
 end)
 
-print("JG Sharp Aim v2 (com FOV) carregado!")
+-- Loop de Renderização para o FOV
+RunService.RenderStepped:Connect(function()
+    FOVCircle.Visible = Settings.Enabled and Settings.ShowFOV
+    if FOVCircle.Visible then
+        FOVCircle.Position = UserInputService:GetMouseLocation()
+        FOVCircle.Radius = Settings.FOV
+    end
+end)
+
+print("JG Sharp Aim v3.3 carregado! Pressione 
