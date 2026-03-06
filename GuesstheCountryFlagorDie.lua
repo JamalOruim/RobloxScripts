@@ -188,7 +188,8 @@ local function getFlagName()
         local scrollFrame = contents:FindFirstChild("ScrollingFrame")
         if not scrollFrame then return "Error: ScrollingFrame not found" end
         
-        for _, child in ipairs(scrollFrame:GetChildren()) do -- Usar GetChildren para evitar iteração desnecessária
+        -- Revertido para GetDescendants para garantir que todas as ImageLabels sejam verificadas
+        for _, child in ipairs(scrollFrame:GetDescendants()) do 
             if child:IsA("ImageLabel") and child.Name == "FlagImage" then
                 local assetId = child.Image:match("%d+")
                 if assetId == targetAssetId then
