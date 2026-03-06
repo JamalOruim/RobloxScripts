@@ -158,62 +158,76 @@ local AntiAfkToggle = Tabs.Misc:AddToggle("AntiAfk", {
     Default = true
 })
 
+-- Função auxiliar para extrair o ID numérico de uma string de imagem
+local function extractImageId(imageString)
+    local id = imageString:match("%d+")
+    return id
+end
+
 local function getFlagName()
     local success, result = pcall(function()
         local playerGui = LocalPlayer.PlayerGui
+        if not playerGui then warn("PlayerGui not found"); return "Error: PlayerGui not found" end
+
         local gameUI = playerGui:FindFirstChild("GameUI")
-        if not gameUI then return "Error: GameUI not found" end
+        if not gameUI then warn("GameUI not found"); return "Error: GameUI not found" end
 
-        local topFlag = gameUI:FindFirstChild("REFERENCED__GameUIFrame")
-        if not topFlag then return "Error: REFERENCED__GameUIFrame not found" end
+        local topFlagFrame = gameUI:FindFirstChild("REFERENCED__GameUIFrame")
+        if not topFlagFrame then warn("REFERENCED__GameUIFrame not found"); return "Error: REFERENCED__GameUIFrame not found" end
 
-        local flagImage = topFlag:FindFirstChild("TopFlag")
-        if not flagImage then return "Error: TopFlag not found" end
+        local topFlag = topFlagFrame:FindFirstChild("TopFlag")
+        if not topFlag then warn("TopFlag not found"); return "Error: TopFlag not found" end
 
-        local actualFlagImage = flagImage:FindFirstChild("FlagImage")
-        if not actualFlagImage then return "Error: FlagImage not found" end
+        local actualTopFlagImage = topFlag:FindFirstChild("FlagImage")
+        if not actualTopFlagImage then warn("Actual Top FlagImage not found"); return "Error: FlagImage not found" end
 
-        local targetAssetId = actualFlagImage.Image:match("%d+")
-        if not targetAssetId then return "Error: Target Asset ID not found" end
+        local targetAssetId = extractImageId(actualTopFlagImage.Image)
+        if not targetAssetId then warn("Target Asset ID not found in: " .. actualTopFlagImage.Image); return "Error: Target Asset ID not found" end
+        warn("Target Asset ID: " .. targetAssetId)
         
         local practise = playerGui:FindFirstChild("Practise")
-        if not practise then return "Error: Practise not found" end
+        if not practise then warn("Practise not found"); return "Error: Practise not found" end
 
         local practiseFrame = practise:FindFirstChild("REFERENCED__PractiseFrame")
-        if not practiseFrame then return "Error: REFERENCED__PractiseFrame not found" end
+        if not practiseFrame then warn("REFERENCED__PractiseFrame not found"); return "Error: REFERENCED__PractiseFrame not found" end
 
         local contents = practiseFrame:FindFirstChild("Contents")
-        if not contents then return "Error: Contents not found" end
+        if not contents then warn("Contents not found"); return "Error: Contents not found" end
 
         local scrollFrame = contents:FindFirstChild("ScrollingFrame")
-        if not scrollFrame then return "Error: ScrollingFrame not found" end
+        if not scrollFrame then warn("ScrollingFrame not found"); return "Error: ScrollingFrame not found" end
         
-        -- Revertido para GetDescendants para garantir que todas as ImageLabels sejam verificadas
+        local foundFlag = false
         for _, child in ipairs(scrollFrame:GetDescendants()) do 
             if child:IsA("ImageLabel") and child.Name == "FlagImage" then
-                local assetId = child.Image:match("%d+")
+                local assetId = extractImageId(child.Image)
+                warn("Comparing: " .. assetId .. " with " .. targetAssetId .. " (Parent: " .. child.Parent.Name .. ")")
                 if assetId == targetAssetId then
+                    foundFlag = true
                     return child.Parent.Name
                 end
             end
         end
         
+        if not foundFlag then
+            warn("No matching flag found in ScrollingFrame descendants.")
+        end
         return "Unknown"
     end)
     
     if success then
         return result
     else
-        warn("Erro em getFlagName: " .. tostring(result)) -- Logar o erro real
+        warn("Erro em getFlagName (pcall): " .. tostring(result)) -- Logar o erro real do pcall
         return "Error"
     end
 end
 
 local function isInRound()
     local success, result = pcall(function()
-        local blocks = workspace:FindFirstChild("References")
-        if not blocks then return false end
-        blocks = blocks:FindFirstChild("Blocks")
+        local blocksRef = workspace:FindFirstChild("References")
+        if not blocksRef then return false end
+        local blocks = blocksRef:FindFirstChild("Blocks")
         if not blocks then return false end
         return blocks:FindFirstChild(LocalPlayer.Name) ~= nil
     end)
