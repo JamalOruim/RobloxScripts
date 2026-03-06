@@ -36,7 +36,7 @@ end
 
 local Window = Fluent:CreateWindow({
     Title = "GTCFOD",
-    SubTitle = "by nvkob1",
+    SubTitle = "by nvkob1 (modded by Jhony)",
     TabWidth = 160,
     Size = Device,
     Acrylic = true,
